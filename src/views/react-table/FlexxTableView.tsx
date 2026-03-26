@@ -6,12 +6,18 @@ import { useState, useEffect } from 'react'
 // MUI Imports
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
+import Checkbox from '@mui/material/Checkbox'
 
 // Third-party Imports
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
 
 // Style Imports
+import IconButton from '@mui/material/IconButton'
+
 import styles from '@core/styles/table.module.css'
+
+//Icons Imports
+
 
 // Type Imports
 import type { FlexxTableType } from '@/types/pages/flexxTableType'
@@ -25,29 +31,63 @@ const { fetchTableData, fetchTopCardsData } = flexService;
 const columnHelper = createColumnHelper<FlexxTableType>()
 
 const columns = [
-  columnHelper.accessor('id', {
-    cell: info => info.getValue(),
-    header: 'ID'
+  columnHelper.display({
+    id: 'select',
+    header: ({ table }) => (
+      <Checkbox
+        checked={table.getIsAllRowsSelected()}
+      indeterminate={table.getIsSomeRowsSelected()} onChange={table.getToggleAllRowsSelectedHandler()}/>
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()} disabled={!row.getCanSelect()}
+      indeterminate={row.getIsSomeSelected()} onChange={row.getToggleSelectedHandler()}/>
+    )
   }),
-  columnHelper.accessor('fullName', {
+  columnHelper.accessor('transaction_id', {
     cell: info => info.getValue(),
-    header: 'Name'
+    header: 'Transaction'
   }),
-  columnHelper.accessor('email', {
+  columnHelper.accessor('policy_holder', {
     cell: info => info.getValue(),
-    header: 'Email'
+    header: 'Policyholder'
   }),
-  columnHelper.accessor('start_date', {
+  columnHelper.accessor('amount', {
     cell: info => info.getValue(),
-    header: 'Date'
+    header: 'Amount'
   }),
-  columnHelper.accessor('experience', {
+  columnHelper.accessor('method', {
     cell: info => info.getValue(),
-    header: 'Experience'
+    header: 'Method'
   }),
-  columnHelper.accessor('age', {
+  columnHelper.accessor('status', {
     cell: info => info.getValue(),
-    header: 'Age'
+    header: 'Status'
+  }),  
+  columnHelper.display({
+    id: 'tasks',
+    header: 'Tasks',
+    cell: ({ row }) => (
+      <div>
+        <strong>Upcoming:</strong> {row.original.upcoming_task}<br />
+        <strong>Overdue:</strong> {row.original.overdue_task}
+      </div>
+
+    )
+  }),
+  columnHelper.display({
+    id: 'action',
+    header: 'Action',
+    cell: () => (
+      <div>
+        <IconButton size="small" onClick={() => console.log('View')}>
+          <i className="ri-eye-line" /> 
+        </IconButton>
+        <IconButton size="small" onClick={() => console.log('Edit')}>
+          <i className="ri-edit-box-line" />
+        </IconButton>
+      </div>
+    )
   })
 ]
 
@@ -56,6 +96,7 @@ const FlexxTableView = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [data, setData] = useState<FlexxTableType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rowSelection, setRowSelection] = useState({});
 
 
   // Hooks
@@ -64,6 +105,11 @@ const FlexxTableView = () => {
   const table = useReactTable({
     data,
     columns,
+    state: {
+      rowSelection,
+    },
+    enableRowSelection: true, 
+  onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     filterFns: {
       fuzzy: () => false
