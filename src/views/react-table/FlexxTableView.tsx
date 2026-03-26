@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 // MUI Imports
 import Card from '@mui/material/Card'
@@ -15,6 +15,11 @@ import styles from '@core/styles/table.module.css'
 
 // Type Imports
 import type { FlexxTableType } from '@/types/pages/flexxTableType'
+
+//Service Imports
+import { flexService } from '@/services/flexxService';
+
+const { fetchTableData, fetchTopCardsData } = flexService;
 
 // Column Definitions
 const columnHelper = createColumnHelper<FlexxTableType>()
@@ -49,9 +54,13 @@ const columns = [
 const FlexxTableView = () => {
   // States
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [data, setData] = useState(() => [])
+  const [data, setData] = useState<FlexxTableType[]>([]);
+  const [loading, setLoading] = useState(true);
+
 
   // Hooks
+
+
   const table = useReactTable({
     data,
     columns,
@@ -60,6 +69,26 @@ const FlexxTableView = () => {
       fuzzy: () => false
     }
   })
+
+  // Effects
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const result = await fetchTableData();
+
+        setData(result);
+      } catch (error) {
+console.error('Data was not loaded: ', error)
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, []);
+
 
   return (
     <Card>
