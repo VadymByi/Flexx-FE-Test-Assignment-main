@@ -7,16 +7,21 @@ import { useState, useEffect } from 'react'
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
 import Checkbox from '@mui/material/Checkbox'
+import Typography from '@mui/material/Typography'
+import Select from '@mui/material/Select'
+import MenuItem from '@mui/material/MenuItem'
 
 // Third-party Imports
-import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
+import { createColumnHelper, flexRender, getCoreRowModel, useReactTable, getPaginationRowModel } from '@tanstack/react-table'
 
 // Style Imports
 import IconButton from '@mui/material/IconButton'
 
-import styles from '@core/styles/table.module.css'
+
 
 //Icons Imports
+import styles from '@core/styles/table.module.css'
+
 
 
 // Type Imports
@@ -101,16 +106,21 @@ const FlexxTableView = () => {
 
   // Hooks
 
-
   const table = useReactTable({
     data,
     columns,
     state: {
       rowSelection,
     },
+    initialState: {
+      pagination: {
+        pageSize:5, /* сделать через переменную*/
+      }
+    },
     enableRowSelection: true, 
   onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
     filterFns: {
       fuzzy: () => false
     }
@@ -155,7 +165,7 @@ console.error('Data was not loaded: ', error)
           <tbody>
             {table
               .getRowModel()
-              .rows.slice(0, 10)
+              .rows
               .map(row => (
                 <tr key={row.id}>
                   {row.getVisibleCells().map(cell => (
@@ -166,6 +176,54 @@ console.error('Data was not loaded: ', error)
           </tbody>
         </table>
       </div>
+      <div className='flex items-center justify-end p-4 gap-6 border-t'>
+  {/* 1. Селект Rows per page */}
+  <div className='flex items-center gap-2'>
+    <Typography variant='body2'>Rows per page:</Typography>
+    <Select
+      size='small'
+      value={table.getState().pagination.pageSize}
+      onChange={e => {
+        table.setPageSize(Number(e.target.value))
+      }}
+      variant='standard'
+      sx={{ minWidth: 60 }}
+    >
+      {[5, 10, 20].map(pageSize => (
+        <MenuItem key={pageSize} value={pageSize}>
+          {pageSize}
+        </MenuItem>
+      ))}
+    </Select>
+  </div>
+
+  {/* 2. Указатель диапазона (например, 1-5 of 15) */}
+  <Typography variant='body2'>
+    {`${table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
+    ${Math.min(
+      (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+      table.getFilteredRowModel().rows.length
+    )} of ${table.getFilteredRowModel().rows.length}`}
+  </Typography>
+
+  {/* 3. Стрелки управления */}
+  <div className='flex items-center'>
+    <IconButton 
+      size='small' 
+      onClick={() => table.previousPage()} 
+      disabled={!table.getCanPreviousPage()}
+    >
+      <i className='ri-arrow-left-s-line' />
+    </IconButton>
+    <IconButton 
+      size='small' 
+      onClick={() => table.nextPage()} 
+      disabled={!table.getCanNextPage()}
+    >
+      <i className='ri-arrow-right-s-line' />
+    </IconButton>
+  </div>
+</div>
     </Card>
   )
 }
