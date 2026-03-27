@@ -4,16 +4,7 @@
 import { useState, useEffect } from 'react'
 
 // MUI Imports
-import Card from '@mui/material/Card'
-import CardHeader from '@mui/material/CardHeader'
-import Checkbox from '@mui/material/Checkbox'
-import Typography from '@mui/material/Typography'
-import Select from '@mui/material/Select'
-import Skeleton from '@mui/material/Skeleton'
-import MenuItem from '@mui/material/MenuItem'
-import Grid from '@mui/material/Grid'
-import CardContent from '@mui/material/CardContent'
-import IconButton from '@mui/material/IconButton'
+import { Card, Checkbox, Typography, Select, Skeleton, MenuItem, Grid, CardContent, IconButton } from '@mui/material'
 
 // Third-party Imports
 import {
@@ -23,7 +14,8 @@ import {
   useReactTable,
   getPaginationRowModel,
   getSortedRowModel,
-  type SortingState
+  type SortingState,
+  type RowSelectionState
 } from '@tanstack/react-table'
 
 // Custom Components Imports
@@ -41,12 +33,12 @@ import { flexService } from '@/services/flexxService'
 
 const { fetchTableData, fetchTopCardsData } = flexService
 
-// Column Definitions
 const columnHelper = createColumnHelper<FlexxTableType>()
 
 const columns = [
   columnHelper.display({
     id: 'select',
+    enableSorting: false,
     header: ({ table }) => (
       <Checkbox
         checked={table.getIsAllRowsSelected()}
@@ -58,41 +50,29 @@ const columns = [
       <Checkbox
         checked={row.getIsSelected()}
         disabled={!row.getCanSelect()}
-        indeterminate={row.getIsSomeSelected()}
         onChange={row.getToggleSelectedHandler()}
       />
     )
   }),
-  columnHelper.accessor('transaction_id', {
-    cell: info => info.getValue(),
-    header: 'Transaction'
-  }),
-  columnHelper.accessor('policy_holder', {
-    cell: info => info.getValue(),
-    header: 'Policyholder'
-  }),
+  columnHelper.accessor('transaction_id', { header: 'Transaction' }),
+  columnHelper.accessor('policy_holder', { header: 'Policyholder' }),
   columnHelper.accessor('amount', {
-    cell: info => `$${info.getValue().toLocaleString()}`,
-    header: 'Amount'
+    header: 'Amount',
+    cell: info => `$${Number(info.getValue() ?? 0).toLocaleString()}`
   }),
-  columnHelper.accessor('method', {
-    cell: info => info.getValue(),
-    header: 'Method'
-  }),
-  columnHelper.accessor('status', {
-    cell: info => info.getValue(),
-    header: 'Status'
-  }),
+  columnHelper.accessor('method', { header: 'Method' }),
+  columnHelper.accessor('status', { header: 'Status' }),
   columnHelper.display({
     id: 'tasks',
     header: 'Tasks',
+    enableSorting: false,
     cell: ({ row }) => (
-      <div className='flex flex-col'>
-        <Typography variant='caption'>
-          <strong>Upcoming:</strong> {row.original.upcoming_task}
+      <div className='flex flex-col gap-0.5'>
+        <Typography variant='body2' color='text.primary'>
+          <span className='font-medium'>Upcoming:</span> {row.original.upcoming_task}
         </Typography>
-        <Typography variant='caption' color='error'>
-          <strong>Overdue:</strong> {row.original.overdue_task}
+        <Typography variant='body2' color='text.secondary'>
+          <span className='font-medium'>Overdue:</span> {row.original.overdue_task}
         </Typography>
       </div>
     )
@@ -100,12 +80,13 @@ const columns = [
   columnHelper.display({
     id: 'action',
     header: 'Action',
+    enableSorting: false,
     cell: () => (
-      <div className='flex items-center'>
-        <IconButton size='small' onClick={() => console.log('View')}>
+      <div className='flex items-center gap-1'>
+        <IconButton size='small'>
           <i className='ri-eye-line' />
         </IconButton>
-        <IconButton size='small' onClick={() => console.log('Edit')}>
+        <IconButton size='small'>
           <i className='ri-edit-box-line' />
         </IconButton>
       </div>
@@ -114,38 +95,26 @@ const columns = [
 ]
 
 const FlexxTableView = () => {
-  // States
   const [data, setData] = useState<FlexxTableType[]>([])
   const [loading, setLoading] = useState(true)
-  const [rowSelection, setRowSelection] = useState({})
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const [statsData, setStatsData] = useState<CardStatsHorizontalProps[]>([])
   const [sorting, setSorting] = useState<SortingState>([])
 
   const table = useReactTable({
     data,
     columns,
-    state: {
-      rowSelection,
-      sorting
-    },
-    initialState: {
-      pagination: {
-        pageSize: 5
-      }
-    },
-
-    enableRowSelection: true,
+    getRowId: (row, index) => `${row.transaction_id}-${index}`,
+    state: { rowSelection, sorting },
     onSortingChange: setSorting,
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    filterFns: {
-      fuzzy: () => false
-    }
+    filterFns: { fuzzy: () => false },
+    initialState: { pagination: { pageSize: 5 } }
   })
 
-  // Effects
   useEffect(() => {
     const loadAllData = async () => {
       try {
@@ -155,7 +124,7 @@ const FlexxTableView = () => {
         setData(tableResult)
         setStatsData(statsResult)
       } catch (error) {
-        console.error('Data was not loaded: ', error)
+        console.error('Data error:', error)
       } finally {
         setLoading(false)
       }
@@ -166,79 +135,60 @@ const FlexxTableView = () => {
 
   return (
     <Grid container spacing={6}>
-      {/* Cards with sceleton */}
+      {/* Cards Section */}
       {loading
         ? Array.from(new Array(4)).map((_, index) => (
-            <Grid item xs={12} sm={6} md={3} key={`stats-skeleton-${index}`}>
+            <Grid item xs={12} sm={6} md={3} key={index}>
               <Card>
                 <CardContent>
-                  <div className='flex justify-between items-center'>
-                    <div className='flex flex-col gap-2 w-full'>
-                      <Skeleton variant='text' width='40%' height={20} />
-                      <Skeleton variant='text' width='60%' height={32} />
-                    </div>
-                    <Skeleton variant='rounded' width={44} height={44} />
-                  </div>
+                  <Skeleton variant='rectangular' height={60} />
                 </CardContent>
               </Card>
             </Grid>
           ))
-        : statsData.map((item, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
-              <Card>
-                <CardContent>
-                  <div className='flex justify-between items-center'>
-                    <div className='flex flex-col gap-1'>
-                      <Typography variant='body2'>{item.title}</Typography>
-                      <Typography variant='h4'>${item.stats}</Typography>
-                    </div>
-                    <CustomAvatar color={item.color} skin='light' variant='rounded' size={44}>
-                      <i className={item.icon} />
-                    </CustomAvatar>
+        : statsData.map(item => (
+            <Grid item xs={12} sm={6} md={3} key={item.title}>
+              <Card sx={{ height: '100%' }}>
+                <CardContent className='flex justify-between items-center'>
+                  <div className='flex flex-col' style={{ minHeight: '64px', justifyContent: 'space-between' }}>
+                    <Typography variant='body2' sx={{ maxWidth: 100, lineHeight: 1.2 }}>
+                      {item.title}
+                    </Typography>
+                    <Typography variant='h4' sx={{ mt: 'auto' }}>
+                      ${item.stats}
+                    </Typography>
                   </div>
+                  <CustomAvatar color={item.color} skin='light' variant='rounded' size={44}>
+                    <i className={item.icon} />
+                  </CustomAvatar>
                 </CardContent>
               </Card>
             </Grid>
           ))}
 
-      {/* Table with sceleton*/}
+      {/* Table Section */}
       <Grid item xs={12}>
         <Card>
-          <CardHeader title='Flexx Table' />
           <div className='overflow-x-auto'>
             <table className={styles.table}>
               <thead>
-                {table.getHeaderGroups().map(headerGroup => (
-                  <tr key={headerGroup.id}>
-                    {headerGroup.headers.map(header => (
+                {table.getHeaderGroups().map(hg => (
+                  <tr key={hg.id}>
+                    {hg.headers.map(header => (
                       <th
                         key={header.id}
-                        onClick={header.column.getToggleSortingHandler()}
-                        style={{
-                          cursor: header.column.getCanSort() ? 'pointer' : 'default',
-                          userSelect: 'none'
-                        }}
-                        className={header.column.getCanSort() ? 'hover:text-primary transition-colors' : ''}
+                        onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
+                        className={header.column.getCanSort() ? styles.sortableHeader : ''}
                       >
-                        <div className='flex items-center gap-1.5'>
-                          <Typography
-                            variant='subtitle2'
-                            className='font-bold uppercase tracking-wider text-[0.8rem]'
-                            color={header.column.getIsSorted() ? 'textPrimary' : 'textSecondary'}
-                          >
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(header.column.columnDef.header, header.getContext())}
+                        <div className={styles.headerContent}>
+                          <Typography variant='subtitle2' className='font-bold uppercase tracking-wider text-[0.8rem]'>
+                            {flexRender(header.column.columnDef.header, header.getContext())}
                           </Typography>
-
                           {header.column.getIsSorted() && (
                             <i
                               className={
-                                header.column.getIsSorted() === 'asc'
-                                  ? 'ri-arrow-up-line text-primary'
-                                  : 'ri-arrow-down-line text-primary'
+                                header.column.getIsSorted() === 'asc' ? 'ri-arrow-up-line' : 'ri-arrow-down-line'
                               }
-                              style={{ fontSize: '1rem' }}
                             />
                           )}
                         </div>
@@ -249,15 +199,11 @@ const FlexxTableView = () => {
               </thead>
               <tbody>
                 {loading
-                  ? Array.from(new Array(table.getState().pagination.pageSize)).map((_, index) => (
-                      <tr key={`skeleton-${index}`}>
-                        {columns.map((_, colIndex) => (
-                          <td key={`skeleton-cell-${colIndex}`}>
-                            {colIndex === 0 ? (
-                              <Skeleton variant='rectangular' width={20} height={20} sx={{ borderRadius: '4px' }} />
-                            ) : (
-                              <Skeleton variant='text' sx={{ fontSize: '1rem' }} width='80%' />
-                            )}
+                  ? Array.from(new Array(5)).map((_, i) => (
+                      <tr key={i}>
+                        {columns.map((_, ci) => (
+                          <td key={ci}>
+                            <Skeleton variant='text' width={ci === 0 ? 24 : '80%'} />
                           </td>
                         ))}
                       </tr>
@@ -282,7 +228,8 @@ const FlexxTableView = () => {
                 value={table.getState().pagination.pageSize}
                 onChange={e => table.setPageSize(Number(e.target.value))}
                 variant='standard'
-                sx={{ minWidth: 60 }}
+                disableUnderline
+                SelectDisplayProps={{ style: { paddingRight: '32px', minWidth: '25px', fontSize: '0.875rem' } }}
               >
                 {[5, 10, 20].map(pageSize => (
                   <MenuItem key={pageSize} value={pageSize}>
@@ -295,22 +242,21 @@ const FlexxTableView = () => {
             <Typography variant='body2'>
               {loading
                 ? 'Loading...'
-                : `${table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
-              ${Math.min(
-                (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-                table.getFilteredRowModel().rows.length
-              )} of ${table.getFilteredRowModel().rows.length}`}
+                : `${
+                    table.getPaginationRowModel().rows.length > 0
+                      ? table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1
+                      : 0
+                  }-${
+                    table.getState().pagination.pageIndex * table.getState().pagination.pageSize +
+                    table.getPaginationRowModel().rows.length
+                  } of ${table.getPrePaginationRowModel().rows.length}`}{' '}
             </Typography>
 
             <div className='flex items-center'>
-              <IconButton
-                size='small'
-                onClick={() => table.previousPage()}
-                disabled={loading || !table.getCanPreviousPage()}
-              >
+              <IconButton size='small' onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
                 <i className='ri-arrow-left-s-line' />
               </IconButton>
-              <IconButton size='small' onClick={() => table.nextPage()} disabled={loading || !table.getCanNextPage()}>
+              <IconButton size='small' onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
                 <i className='ri-arrow-right-s-line' />
               </IconButton>
             </div>

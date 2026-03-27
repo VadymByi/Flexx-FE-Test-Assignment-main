@@ -12,7 +12,7 @@
   }
 
   thead {
-    text-transform: uppercase;
+    /* text-transform: uppercase; */
     color: var(--mui-palette-text-primary);
 
     th {
@@ -89,4 +89,24 @@
   &:focus-visible {
     outline: 1px solid var(--mui-palette-primary-main);
   }
+}
+
+.paginationWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 1rem;
+  gap: 1.5rem;
+  border-block-start: 1px solid var(--border-color);
+}
+
+/* Стили для заголовков с сортировкой (чтобы иконка не прыгала) */
+.headerContent {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.table tbody tr:hover {
+  background-color: var(--mui-palette-action-hover);
 }
