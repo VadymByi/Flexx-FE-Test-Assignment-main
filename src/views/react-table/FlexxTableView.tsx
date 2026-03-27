@@ -20,7 +20,9 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
-  getPaginationRowModel
+  getPaginationRowModel,
+  getSortedRowModel,
+  type SortingState
 } from '@tanstack/react-table'
 
 // Custom Components Imports
@@ -31,6 +33,7 @@ import styles from '@core/styles/table.module.css'
 
 // Type Imports
 import type { FlexxTableType } from '@/types/pages/flexxTableType'
+import type { CardStatsHorizontalProps } from '@/types/pages/widgetTypes'
 
 // Service Imports
 import { flexService } from '@/services/flexxService'
@@ -114,23 +117,28 @@ const FlexxTableView = () => {
   const [data, setData] = useState<FlexxTableType[]>([])
   const [loading, setLoading] = useState(true)
   const [rowSelection, setRowSelection] = useState({})
-  const [statsData, setStatsData] = useState<any[]>([])
+  const [statsData, setStatsData] = useState<CardStatsHorizontalProps[]>([])
+  const [sorting, setSorting] = useState<SortingState>([])
 
   const table = useReactTable({
     data,
     columns,
     state: {
-      rowSelection
+      rowSelection,
+      sorting
     },
     initialState: {
       pagination: {
         pageSize: 5
       }
     },
+
     enableRowSelection: true,
+    onSortingChange: setSorting,
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     filterFns: {
       fuzzy: () => false
     }
@@ -165,7 +173,7 @@ const FlexxTableView = () => {
               <div className='flex justify-between items-center'>
                 <div className='flex flex-col gap-1'>
                   <Typography variant='body2'>{item.title}</Typography>
-                  <Typography variant='h4'>${Number(item.value).toLocaleString()}</Typography>
+                  <Typography variant='h4'>${item.stats}</Typography>
                 </div>
                 <CustomAvatar color={item.color} skin='light' variant='rounded' size={44}>
                   <i className={item.icon} />
@@ -176,7 +184,7 @@ const FlexxTableView = () => {
         </Grid>
       ))}
 
-      {/* Table*/}
+      {/* Table */}
       <Grid item xs={12}>
         <Card>
           <CardHeader title='Flexx Table' />
@@ -186,8 +194,37 @@ const FlexxTableView = () => {
                 {table.getHeaderGroups().map(headerGroup => (
                   <tr key={headerGroup.id}>
                     {headerGroup.headers.map(header => (
-                      <th key={header.id}>
-                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      <th
+                        key={header.id}
+                        onClick={header.column.getToggleSortingHandler()}
+                        style={{
+                          cursor: header.column.getCanSort() ? 'pointer' : 'default',
+                          userSelect: 'none'
+                        }}
+                        className={header.column.getCanSort() ? 'hover:text-primary transition-colors' : ''}
+                      >
+                        <div className='flex items-center gap-1.5'>
+                          <Typography
+                            variant='subtitle2'
+                            className='font-bold uppercase tracking-wider text-[0.8rem]'
+                            color={header.column.getIsSorted() ? 'textPrimary' : 'textSecondary'}
+                          >
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(header.column.columnDef.header, header.getContext())}
+                          </Typography>
+
+                          {header.column.getIsSorted() && (
+                            <i
+                              className={
+                                header.column.getIsSorted() === 'asc'
+                                  ? 'ri-arrow-up-line text-primary'
+                                  : 'ri-arrow-down-line text-primary'
+                              }
+                              style={{ fontSize: '1rem' }}
+                            />
+                          )}
+                        </div>
                       </th>
                     ))}
                   </tr>
@@ -226,10 +263,10 @@ const FlexxTableView = () => {
 
             <Typography variant='body2'>
               {`${table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
-              ${Math.min(
-                (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-                table.getFilteredRowModel().rows.length
-              )} of ${table.getFilteredRowModel().rows.length}`}
+            ${Math.min(
+              (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+              table.getFilteredRowModel().rows.length
+            )} of ${table.getFilteredRowModel().rows.length}`}
             </Typography>
 
             <div className='flex items-center'>

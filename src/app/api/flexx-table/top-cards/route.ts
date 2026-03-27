@@ -16,31 +16,35 @@ export async function GET() {
   const stats = [
     {
       title: 'Payments',
-      value: payments,
+      stats: `${payments.toLocaleString('en-US')}`,
       icon: 'ri-user-follow-line',
       color: 'success',
-      isPending: false
+      trendNumber: '15%', // захардкодил для соответствия типу
+      trend: 'positive'
     },
     {
       title: 'Pending Payments',
-      value: pendingPayments,
+      stats: `${pendingPayments.toLocaleString('en-US')}`,
       icon: 'ri-user-add-line',
       color: 'success',
-      isPending: true
+      trendNumber: '5%',
+      trend: 'positive'
     },
     {
       title: 'Payouts',
-      value: payouts,
+      stats: `${payouts.toLocaleString('en-US')}`,
       icon: 'ri-user-follow-line',
       color: 'error',
-      isPending: false
+      trendNumber: '10%',
+      trend: 'negative'
     },
     {
       title: 'Pending Payouts',
-      value: pendingPayouts,
+      stats: `${pendingPayouts.toLocaleString('en-US')}`,
       icon: 'ri-user-add-line',
       color: 'error',
-      isPending: true
+      trendNumber: '2%',
+      trend: 'negative'
     }
   ]
 
