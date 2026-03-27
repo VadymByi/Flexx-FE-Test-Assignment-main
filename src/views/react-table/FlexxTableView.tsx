@@ -9,6 +9,7 @@ import CardHeader from '@mui/material/CardHeader'
 import Checkbox from '@mui/material/Checkbox'
 import Typography from '@mui/material/Typography'
 import Select from '@mui/material/Select'
+import Skeleton from '@mui/material/Skeleton'
 import MenuItem from '@mui/material/MenuItem'
 import Grid from '@mui/material/Grid'
 import CardContent from '@mui/material/CardContent'
@@ -165,26 +166,42 @@ const FlexxTableView = () => {
 
   return (
     <Grid container spacing={6}>
-      {/* Cards */}
-      {statsData.map((item, index) => (
-        <Grid item xs={12} sm={6} md={3} key={index}>
-          <Card>
-            <CardContent>
-              <div className='flex justify-between items-center'>
-                <div className='flex flex-col gap-1'>
-                  <Typography variant='body2'>{item.title}</Typography>
-                  <Typography variant='h4'>${item.stats}</Typography>
-                </div>
-                <CustomAvatar color={item.color} skin='light' variant='rounded' size={44}>
-                  <i className={item.icon} />
-                </CustomAvatar>
-              </div>
-            </CardContent>
-          </Card>
-        </Grid>
-      ))}
+      {/* Cards with sceleton */}
+      {loading
+        ? Array.from(new Array(4)).map((_, index) => (
+            <Grid item xs={12} sm={6} md={3} key={`stats-skeleton-${index}`}>
+              <Card>
+                <CardContent>
+                  <div className='flex justify-between items-center'>
+                    <div className='flex flex-col gap-2 w-full'>
+                      <Skeleton variant='text' width='40%' height={20} />
+                      <Skeleton variant='text' width='60%' height={32} />
+                    </div>
+                    <Skeleton variant='rounded' width={44} height={44} />
+                  </div>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))
+        : statsData.map((item, index) => (
+            <Grid item xs={12} sm={6} md={3} key={index}>
+              <Card>
+                <CardContent>
+                  <div className='flex justify-between items-center'>
+                    <div className='flex flex-col gap-1'>
+                      <Typography variant='body2'>{item.title}</Typography>
+                      <Typography variant='h4'>${item.stats}</Typography>
+                    </div>
+                    <CustomAvatar color={item.color} skin='light' variant='rounded' size={44}>
+                      <i className={item.icon} />
+                    </CustomAvatar>
+                  </div>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
 
-      {/* Table */}
+      {/* Table with sceleton*/}
       <Grid item xs={12}>
         <Card>
           <CardHeader title='Flexx Table' />
@@ -231,13 +248,27 @@ const FlexxTableView = () => {
                 ))}
               </thead>
               <tbody>
-                {table.getRowModel().rows.map(row => (
-                  <tr key={row.id}>
-                    {row.getVisibleCells().map(cell => (
-                      <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                {loading
+                  ? Array.from(new Array(table.getState().pagination.pageSize)).map((_, index) => (
+                      <tr key={`skeleton-${index}`}>
+                        {columns.map((_, colIndex) => (
+                          <td key={`skeleton-cell-${colIndex}`}>
+                            {colIndex === 0 ? (
+                              <Skeleton variant='rectangular' width={20} height={20} sx={{ borderRadius: '4px' }} />
+                            ) : (
+                              <Skeleton variant='text' sx={{ fontSize: '1rem' }} width='80%' />
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  : table.getRowModel().rows.map(row => (
+                      <tr key={row.id}>
+                        {row.getVisibleCells().map(cell => (
+                          <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                        ))}
+                      </tr>
                     ))}
-                  </tr>
-                ))}
               </tbody>
             </table>
           </div>
@@ -262,18 +293,24 @@ const FlexxTableView = () => {
             </div>
 
             <Typography variant='body2'>
-              {`${table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
-            ${Math.min(
-              (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-              table.getFilteredRowModel().rows.length
-            )} of ${table.getFilteredRowModel().rows.length}`}
+              {loading
+                ? 'Loading...'
+                : `${table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
+              ${Math.min(
+                (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+                table.getFilteredRowModel().rows.length
+              )} of ${table.getFilteredRowModel().rows.length}`}
             </Typography>
 
             <div className='flex items-center'>
-              <IconButton size='small' onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+              <IconButton
+                size='small'
+                onClick={() => table.previousPage()}
+                disabled={loading || !table.getCanPreviousPage()}
+              >
                 <i className='ri-arrow-left-s-line' />
               </IconButton>
-              <IconButton size='small' onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+              <IconButton size='small' onClick={() => table.nextPage()} disabled={loading || !table.getCanNextPage()}>
                 <i className='ri-arrow-right-s-line' />
               </IconButton>
             </div>
