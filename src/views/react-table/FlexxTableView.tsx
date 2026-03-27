@@ -104,14 +104,14 @@ const FlexxTableView = () => {
   const table = useReactTable({
     data,
     columns,
-    getRowId: (row, index) => `${row.transaction_id}-${index}`,
+    getRowId: (row, index) => `${row.transaction_id}-${row.policy_holder}-${index}`, // в базе сть неуникальные айдишки, поэтому пришлось колхозить
     state: { rowSelection, sorting },
     onSortingChange: setSorting,
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    filterFns: { fuzzy: () => false },
+    filterFns: { fuzzy: () => false }, // тоже прям заглушка, но иначе ругается тайпскрипт
     initialState: { pagination: { pageSize: 5 } }
   })
 
@@ -133,6 +133,10 @@ const FlexxTableView = () => {
     loadAllData()
   }, [])
 
+  const { pageIndex, pageSize } = table.getState().pagination
+  const current = table.getPaginationRowModel().rows.length
+  const total = table.getPrePaginationRowModel().rows.length
+
   return (
     <Grid container spacing={6}>
       {/* Cards Section */}
@@ -146,8 +150,9 @@ const FlexxTableView = () => {
               </Card>
             </Grid>
           ))
-        : statsData.map(item => (
-            <Grid item xs={12} sm={6} md={3} key={item.title}>
+        : statsData.map((item, index) => (
+            <Grid item xs={12} sm={6} md={3} key={`${item.title}-${index}`}>
+              {' '}
               <Card sx={{ height: '100%' }}>
                 <CardContent className='flex justify-between items-center'>
                   <div className='flex flex-col' style={{ minHeight: '64px', justifyContent: 'space-between' }}>
@@ -198,23 +203,33 @@ const FlexxTableView = () => {
                 ))}
               </thead>
               <tbody>
-                {loading
-                  ? Array.from(new Array(5)).map((_, i) => (
-                      <tr key={i}>
-                        {columns.map((_, ci) => (
-                          <td key={ci}>
-                            <Skeleton variant='text' width={ci === 0 ? 24 : '80%'} />
-                          </td>
-                        ))}
-                      </tr>
-                    ))
-                  : table.getRowModel().rows.map(row => (
-                      <tr key={row.id}>
-                        {row.getVisibleCells().map(cell => (
-                          <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                        ))}
-                      </tr>
-                    ))}
+                {loading ? (
+                  Array.from(new Array(5)).map((_, i) => (
+                    <tr key={i}>
+                      {columns.map((_, ci) => (
+                        <td key={ci}>
+                          <Skeleton variant='text' width={ci === 0 ? 24 : '80%'} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                ) : table.getRowModel().rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={columns.length}>
+                      <Typography align='center' sx={{ py: 3 }}>
+                        No data available
+                      </Typography>
+                    </td>
+                  </tr>
+                ) : (
+                  table.getRowModel().rows.map(row => (
+                    <tr key={row.id}>
+                      {row.getVisibleCells().map(cell => (
+                        <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                      ))}
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -225,7 +240,7 @@ const FlexxTableView = () => {
               <Typography variant='body2'>Rows per page:</Typography>
               <Select
                 size='small'
-                value={table.getState().pagination.pageSize}
+                value={pageSize}
                 onChange={e => table.setPageSize(Number(e.target.value))}
                 variant='standard'
                 disableUnderline
@@ -242,14 +257,7 @@ const FlexxTableView = () => {
             <Typography variant='body2'>
               {loading
                 ? 'Loading...'
-                : `${
-                    table.getPaginationRowModel().rows.length > 0
-                      ? table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1
-                      : 0
-                  }-${
-                    table.getState().pagination.pageIndex * table.getState().pagination.pageSize +
-                    table.getPaginationRowModel().rows.length
-                  } of ${table.getPrePaginationRowModel().rows.length}`}{' '}
+                : `${current ? pageIndex * pageSize + 1 : 0}-${pageIndex * pageSize + current} of ${total}`}
             </Typography>
 
             <div className='flex items-center'>
