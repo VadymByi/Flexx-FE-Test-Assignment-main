@@ -38,30 +38,44 @@ const columnHelper = createColumnHelper<FlexxTableType>()
 const columns = [
   columnHelper.display({
     id: 'select',
+    size: 48,
+    minSize: 48,
+    maxSize: 48,
     enableSorting: false,
     header: ({ table }) => (
-      <Checkbox
-        checked={table.getIsAllRowsSelected()}
-        indeterminate={table.getIsSomeRowsSelected()}
-        onChange={table.getToggleAllRowsSelectedHandler()}
-      />
+      <div className={styles.selectCellWrapper}>
+        <Checkbox
+          checked={table.getIsAllRowsSelected()}
+          indeterminate={table.getIsSomeRowsSelected()}
+          onChange={table.getToggleAllRowsSelectedHandler()}
+        />
+      </div>
     ),
     cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        disabled={!row.getCanSelect()}
-        onChange={row.getToggleSelectedHandler()}
-      />
+      <div className={styles.selectCellWrapper}>
+        <Checkbox
+          checked={row.getIsSelected()}
+          disabled={!row.getCanSelect()}
+          onChange={row.getToggleSelectedHandler()}
+        />
+      </div>
     )
   }),
   columnHelper.accessor('transaction_id', { header: 'Transaction' }),
   columnHelper.accessor('policy_holder', { header: 'Policyholder' }),
   columnHelper.accessor('amount', {
     header: 'Amount',
-    cell: info => `$${Number(info.getValue() ?? 0).toLocaleString()}`
+    cell: info => `$${Number(info.getValue() ?? 0).toLocaleString('en-US')}`
   }),
   columnHelper.accessor('method', { header: 'Method' }),
-  columnHelper.accessor('status', { header: 'Status' }),
+  columnHelper.accessor('status', {
+    header: 'Status',
+    cell: info => {
+      const value = info.getValue()
+
+      return <span className={`${styles.status} ${styles[`status_${value.toLowerCase()}`]}`}>{value}</span>
+    }
+  }),
   columnHelper.display({
     id: 'tasks',
     header: 'Tasks',
@@ -104,14 +118,14 @@ const FlexxTableView = () => {
   const table = useReactTable({
     data,
     columns,
-    getRowId: (row, index) => `${row.transaction_id}-${row.policy_holder}-${index}`, // в базе сть неуникальные айдишки, поэтому пришлось колхозить
+    getRowId: (row, index) => `${row.transaction_id}-${row.policy_holder}-${index}`, // вимушено заколхозив - у базі неунікальні ідентифікатори
     state: { rowSelection, sorting },
     onSortingChange: setSorting,
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    filterFns: { fuzzy: () => false }, // тоже прям заглушка, но иначе ругается тайпскрипт
+    filterFns: { fuzzy: () => false }, //також заглушка - щоб тайпскрипт не сварився
     initialState: { pagination: { pageSize: 5 } }
   })
 
@@ -133,43 +147,46 @@ const FlexxTableView = () => {
     loadAllData()
   }, [])
 
-  const { pageIndex, pageSize } = table.getState().pagination
-  const current = table.getPaginationRowModel().rows.length
-  const total = table.getPrePaginationRowModel().rows.length
-
   return (
     <Grid container spacing={6}>
       {/* Cards Section */}
-      {loading
-        ? Array.from(new Array(4)).map((_, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
-              <Card>
-                <CardContent>
-                  <Skeleton variant='rectangular' height={60} />
-                </CardContent>
-              </Card>
-            </Grid>
-          ))
-        : statsData.map((item, index) => (
-            <Grid item xs={12} sm={6} md={3} key={`${item.title}-${index}`}>
-              {' '}
-              <Card sx={{ height: '100%' }}>
-                <CardContent className='flex justify-between items-center'>
-                  <div className='flex flex-col' style={{ minHeight: '64px', justifyContent: 'space-between' }}>
-                    <Typography variant='body2' sx={{ maxWidth: 100, lineHeight: 1.2 }}>
-                      {item.title}
-                    </Typography>
-                    <Typography variant='h4' sx={{ mt: 'auto' }}>
-                      ${item.stats}
-                    </Typography>
-                  </div>
-                  <CustomAvatar color={item.color} skin='light' variant='rounded' size={44}>
-                    <i className={item.icon} />
-                  </CustomAvatar>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
+      <Grid item xs={12}>
+        <div className={styles.cardsWrapper}>
+          {' '}
+          {loading
+            ? Array.from(new Array(4)).map((_, index) => (
+                <Card key={index} className={styles.statCard}>
+                  <CardContent>
+                    <Skeleton variant='rectangular' height={60} />
+                  </CardContent>
+                </Card>
+              ))
+            : statsData.map(item => (
+                <Card key={item.title} className={styles.statCard}>
+                  <CardContent className='flex flex-row h-full'>
+                    <div className='flex flex-col flex-grow justify-between pr-2' style={{ minHeight: '80px' }}>
+                      <Typography variant='body2' className={styles.cardTitle}>
+                        {item.title}
+                      </Typography>
+
+                      <Typography
+                        variant='h4'
+                        className={item.title.includes('Pending') ? styles.statValuePending : styles.statValue}
+                      >
+                        ${item.stats}
+                      </Typography>
+                    </div>
+
+                    <div className='flex flex-col justify-start'>
+                      <CustomAvatar color={item.color} skin='light' variant='rounded' size={44}>
+                        <i className={item.icon} />
+                      </CustomAvatar>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+        </div>
+      </Grid>
 
       {/* Table Section */}
       <Grid item xs={12}>
@@ -186,7 +203,7 @@ const FlexxTableView = () => {
                         className={header.column.getCanSort() ? styles.sortableHeader : ''}
                       >
                         <div className={styles.headerContent}>
-                          <Typography variant='subtitle2' className='font-bold uppercase tracking-wider text-[0.8rem]'>
+                          <Typography variant='subtitle2' className='font-bold tracking-wider text-[0.8rem]'>
                             {flexRender(header.column.columnDef.header, header.getContext())}
                           </Typography>
                           {header.column.getIsSorted() && (
@@ -203,48 +220,41 @@ const FlexxTableView = () => {
                 ))}
               </thead>
               <tbody>
-                {loading ? (
-                  Array.from(new Array(5)).map((_, i) => (
-                    <tr key={i}>
-                      {columns.map((_, ci) => (
-                        <td key={ci}>
-                          <Skeleton variant='text' width={ci === 0 ? 24 : '80%'} />
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                ) : table.getRowModel().rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={columns.length}>
-                      <Typography align='center' sx={{ py: 3 }}>
-                        No data available
-                      </Typography>
-                    </td>
-                  </tr>
-                ) : (
-                  table.getRowModel().rows.map(row => (
-                    <tr key={row.id}>
-                      {row.getVisibleCells().map(cell => (
-                        <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                      ))}
-                    </tr>
-                  ))
-                )}
+                {loading
+                  ? Array.from(new Array(5)).map((_, i) => (
+                      <tr key={i}>
+                        {columns.map((_, ci) => (
+                          <td key={ci}>
+                            <Skeleton variant='text' width={ci === 0 ? 24 : '80%'} />
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  : table.getRowModel().rows.map(row => (
+                      <tr key={row.id}>
+                        {row.getVisibleCells().map(cell => (
+                          <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                        ))}
+                      </tr>
+                    ))}
               </tbody>
             </table>
           </div>
 
           {/* Pagination */}
-          <div className='flex items-center justify-end p-4 gap-6 border-t'>
-            <div className='flex items-center gap-2'>
-              <Typography variant='body2'>Rows per page:</Typography>
+          <div className={`flex items-center justify-end p-4 gap-6 border-t ${styles.paginationWrapper}`}>
+            <div className='flex items-center gap-4'>
+              {' '}
+              <Typography variant='body2' className={styles.paginationText}>
+                Rows per page:
+              </Typography>
               <Select
                 size='small'
-                value={pageSize}
+                value={table.getState().pagination.pageSize}
                 onChange={e => table.setPageSize(Number(e.target.value))}
                 variant='standard'
                 disableUnderline
-                SelectDisplayProps={{ style: { paddingRight: '32px', minWidth: '25px', fontSize: '0.875rem' } }}
+                className={styles.paginationSelect}
               >
                 {[5, 10, 20].map(pageSize => (
                   <MenuItem key={pageSize} value={pageSize}>
@@ -254,10 +264,17 @@ const FlexxTableView = () => {
               </Select>
             </div>
 
-            <Typography variant='body2'>
+            <Typography variant='body2' className={styles.paginationText}>
               {loading
                 ? 'Loading...'
-                : `${current ? pageIndex * pageSize + 1 : 0}-${pageIndex * pageSize + current} of ${total}`}
+                : `${
+                    table.getPaginationRowModel().rows.length > 0
+                      ? table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1
+                      : 0
+                  }-${
+                    table.getState().pagination.pageIndex * table.getState().pagination.pageSize +
+                    table.getPaginationRowModel().rows.length
+                  } of ${table.getPrePaginationRowModel().rows.length}`}{' '}
             </Typography>
 
             <div className='flex items-center'>

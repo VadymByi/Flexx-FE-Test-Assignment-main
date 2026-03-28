@@ -9,7 +9,7 @@ export async function GET() {
     .filter(item => item.status === 'Pending' || item.status === 'Processing')
     .reduce((acc, item) => acc + item.amount, 0)
 
-  //у  базі немає даних ро витрати, тому роблю типу заглушки з рандомними числами, але у логічних межах - не більше доходів
+  // у  базі немає даних ро витрати, тому роблю типу заглушки з рандомними числами, але у логічних межах - не більше доходів
   const payouts = Math.floor(Math.random() * payments)
   const pendingPayouts = Math.floor(Math.random() * payouts)
 
@@ -34,7 +34,7 @@ export async function GET() {
       title: 'Payouts',
       stats: `${payouts.toLocaleString('en-US')}`,
       icon: 'ri-user-follow-line',
-      color: 'error',
+      color: 'primary',
       trendNumber: '10%',
       trend: 'negative'
     },
@@ -42,7 +42,7 @@ export async function GET() {
       title: 'Pending Payouts',
       stats: `${pendingPayouts.toLocaleString('en-US')}`,
       icon: 'ri-user-add-line',
-      color: 'error',
+      color: 'primary',
       trendNumber: '2%',
       trend: 'negative'
     }
