@@ -1,3 +1,14 @@
+## Submission Notes
+
+- **Implementation:** Completed client-side data loading, API routes, and UI polish according to the design.
+- **Key Features:** TanStack Table (sorting, pagination), API aggregation for top cards, responsive Skeleton loading.
+- **Code Style:** Followed existing project structure and MUI/Tailwind patterns.
+
+### How to run:
+
+1. `npm install`
+2. `npm run dev`
+
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started
@@ -51,7 +62,7 @@ This image showcases the intended layout and functionality of the Flexx-Table, i
 
 Refer to this image when implementing the Flexx-Table to ensure the final result matches the desired appearance and functionality.
 
-
 ## Submission:
+
 Development is done in a feature branch created by you.
 Then, create a Pull Requst containing your changes.
